@@ -1,0 +1,35 @@
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  coins INTEGER DEFAULT 100,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE media (
+  id SERIAL PRIMARY KEY,
+  uploader_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(200) NOT NULL,
+  unlock_price INTEGER NOT NULL,
+  original_key TEXT NOT NULL,
+  blurred_key TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE unlocks (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  media_id INTEGER REFERENCES media(id) ON DELETE CASCADE,
+  unlocked_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, media_id)
+);
+
+CREATE TABLE transactions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
