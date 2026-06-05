@@ -1,13 +1,14 @@
 const express = require("express");
 const pool = require("./db");
 const authRoutes = require("./routes/auth");
-
+const { server } = require("./db/s3");
+const mediaRoutes = require("./routes/media");
 require("dotenv").config();
 
 const app = express();
 
 app.use(express.json());
-
+app.use("/media", mediaRoutes);
 app.use("/auth", authRoutes);
 
 app.get("/", (req, res) => {
@@ -18,7 +19,10 @@ pool.query("SELECT NOW()", (err, res) => {
   if (err) console.error("DB connection error", err);
   else console.log("DB connected at", res.rows[0].now);
 });
-
+server
+  .run()
+  .then(() => console.log("S3rver running on port 4568"))
+  .catch((err) => console.error("S3rver error:", err));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
