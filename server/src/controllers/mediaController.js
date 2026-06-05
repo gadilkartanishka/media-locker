@@ -19,7 +19,6 @@ const uploadMedia = async (req, res) => {
 
     const blurredBuffer = await sharp(file.buffer).blur(20).toBuffer();
 
-    // Upload original to S3
     await s3Client.send(
       new PutObjectCommand({
         Bucket: BUCKET_NAME,
@@ -29,7 +28,6 @@ const uploadMedia = async (req, res) => {
       }),
     );
 
-    // Upload blurred to S3
     await s3Client.send(
       new PutObjectCommand({
         Bucket: BUCKET_NAME,
@@ -39,7 +37,6 @@ const uploadMedia = async (req, res) => {
       }),
     );
 
-    // Save media record to database
     const result = await pool.query(
       `INSERT INTO media (uploader_id, title, unlock_price, original_key, blurred_key)
        VALUES ($1, $2, $3, $4, $5)
@@ -53,5 +50,30 @@ const uploadMedia = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+const getMediaFeed = async (req, res) => {
+  try {
+    const userId = req.user.userId;
 
-module.exports = { uploadMedia };
+    const result = await pool.query(
+      `SELECT 
+        m.id,
+        m.title,
+        m.unlock_price,
+        m.blurred_key,
+        m.created_at,
+        m.uploader_id,
+        CASE WHEN u.id IS NOT NULL THEN true ELSE false END as is_unlocked,
+        CASE WHEN m.uploader_id = $1 THEN true ELSE false END as is_owner
+       FROM media m
+       LEFT JOIN unlocks u ON u.media_id = m.id AND u.user_id = $1
+       ORDER BY m.created_at DESC`,
+      [userId],
+    );
+
+    res.json({ media: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+module.exports = { uploadMedia, getMediaFeed };
