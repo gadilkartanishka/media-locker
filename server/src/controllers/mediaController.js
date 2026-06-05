@@ -3,7 +3,7 @@ const { s3Client, BUCKET_NAME } = require("../db/s3");
 const pool = require("../db");
 const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
-
+const { generatePresignedUrl } = require("../db/s3");
 const uploadMedia = async (req, res) => {
   try {
     const { title, unlock_price } = req.body;
@@ -158,4 +158,53 @@ const unlockMedia = async (req, res) => {
     client.release();
   }
 };
-module.exports = { uploadMedia, getMediaFeed, unlockMedia };
+const getMediaById = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const mediaId = req.params.id;
+
+    // Get media details
+    const mediaResult = await pool.query("SELECT * FROM media WHERE id = $1", [
+      mediaId,
+    ]);
+
+    if (mediaResult.rows.length === 0) {
+      return res.status(404).json({ error: "Media not found" });
+    }
+
+    const media = mediaResult.rows[0];
+
+    // Check if user has access (owner or unlocked)
+    const isOwner = media.uploader_id === userId;
+
+    const unlockResult = await pool.query(
+      "SELECT * FROM unlocks WHERE user_id = $1 AND media_id = $2",
+      [userId, mediaId],
+    );
+
+    const isUnlocked = unlockResult.rows.length > 0;
+
+    // Generate blurred URL always
+    const blurredUrl = await generatePresignedUrl(media.blurred_key);
+
+    // Generate original URL only if owner or unlocked
+    let originalUrl = null;
+    if (isOwner || isUnlocked) {
+      originalUrl = await generatePresignedUrl(media.original_key);
+    }
+
+    res.json({
+      id: media.id,
+      title: media.title,
+      unlock_price: media.unlock_price,
+      is_unlocked: isUnlocked,
+      is_owner: isOwner,
+      blurred_url: blurredUrl,
+      original_url: originalUrl,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+module.exports = { uploadMedia, getMediaFeed, unlockMedia, getMediaById };

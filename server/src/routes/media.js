@@ -6,6 +6,7 @@ const {
   uploadMedia,
   getMediaFeed,
   unlockMedia,
+  getMediaById,
 } = require("../controllers/mediaController");
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -13,4 +14,5 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get("/", authenticate, getMediaFeed);
 router.post("/upload", authenticate, upload.single("image"), uploadMedia);
 router.post("/:id/unlock", authenticate, unlockMedia);
+router.get("/:id", authenticate, getMediaById);
 module.exports = router;

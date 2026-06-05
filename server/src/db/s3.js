@@ -2,7 +2,8 @@ const S3rver = require("s3rver");
 const { S3Client } = require("@aws-sdk/client-s3");
 const path = require("path");
 const fs = require("fs");
-
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { GetObjectCommand } = require("@aws-sdk/client-s3");
 const BUCKET_NAME = "media-locker";
 const S3_PORT = 4568;
 const S3_HOST = "localhost";
@@ -33,5 +34,13 @@ const s3Client = new S3Client({
     secretAccessKey: "S3RVER",
   },
 });
+const generatePresignedUrl = async (key) => {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
 
-module.exports = { server, s3Client, BUCKET_NAME };
+  const url = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+  return url;
+};
+module.exports = { server, s3Client, BUCKET_NAME, generatePresignedUrl };
