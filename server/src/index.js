@@ -3,14 +3,16 @@ const pool = require("./db");
 const authRoutes = require("./routes/auth");
 const { server } = require("./db/s3");
 const mediaRoutes = require("./routes/media");
+const walletRoutes = require("./routes/wallet");
+
 require("dotenv").config();
 
 const app = express();
 
 app.use(express.json());
-app.use("/media", mediaRoutes);
 app.use("/auth", authRoutes);
-
+app.use("/media", mediaRoutes);
+app.use("/wallet", walletRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Media Locker API is running" });
 });

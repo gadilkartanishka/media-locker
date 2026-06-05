@@ -2,11 +2,15 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const authenticate = require("../middleware/auth");
-const { uploadMedia, getMediaFeed } = require("../controllers/mediaController");
+const {
+  uploadMedia,
+  getMediaFeed,
+  unlockMedia,
+} = require("../controllers/mediaController");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.get("/", authenticate, getMediaFeed);
 router.post("/upload", authenticate, upload.single("image"), uploadMedia);
-
+router.post("/:id/unlock", authenticate, unlockMedia);
 module.exports = router;

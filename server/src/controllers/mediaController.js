@@ -76,4 +76,86 @@ const getMediaFeed = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-module.exports = { uploadMedia, getMediaFeed };
+const unlockMedia = async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const userId = req.user.userId;
+    const mediaId = req.params.id;
+
+    await client.query("BEGIN");
+
+    // Get media details
+    const mediaResult = await client.query(
+      "SELECT * FROM media WHERE id = $1",
+      [mediaId],
+    );
+
+    if (mediaResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Media not found" });
+    }
+
+    const media = mediaResult.rows[0];
+
+    // Check if user is the owner
+    if (media.uploader_id === userId) {
+      await client.query("ROLLBACK");
+      return res
+        .status(400)
+        .json({ error: "You cannot unlock your own media" });
+    }
+
+    // Check for duplicate purchase
+    const existingUnlock = await client.query(
+      "SELECT * FROM unlocks WHERE user_id = $1 AND media_id = $2",
+      [userId, mediaId],
+    );
+
+    if (existingUnlock.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Already unlocked" });
+    }
+
+    // Check user balance
+    const userResult = await client.query(
+      "SELECT coins FROM users WHERE id = $1",
+      [userId],
+    );
+
+    if (userResult.rows[0].coins < media.unlock_price) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Insufficient coins" });
+    }
+
+    // Deduct coins
+    await client.query("UPDATE users SET coins = coins - $1 WHERE id = $2", [
+      media.unlock_price,
+      userId,
+    ]);
+
+    // Record transaction
+    await client.query(
+      `INSERT INTO transactions (user_id, amount, type, description)
+       VALUES ($1, $2, 'debit', $3)`,
+      [userId, media.unlock_price, `Unlocked media: ${media.title}`],
+    );
+
+    // Create unlock record
+    await client.query(
+      "INSERT INTO unlocks (user_id, media_id) VALUES ($1, $2)",
+      [userId, mediaId],
+    );
+
+    await client.query("COMMIT");
+
+    res.json({ message: "Media unlocked successfully" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  } finally {
+    client.release();
+  }
+};
+module.exports = { uploadMedia, getMediaFeed, unlockMedia };
