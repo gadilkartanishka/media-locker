@@ -35,7 +35,7 @@ function Feed() {
         <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#0f172a" }}>Media Feed</h2>
         <div style={styles.headerRight}>
           {user && (
-            <span style={styles.coinsBadge}>
+            <span style={styles.coinsBadge} onClick={() => navigate("/wallet")}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
                 <circle cx="12" cy="12" r="10"></circle>
                 <circle cx="12" cy="12" r="6"></circle>
@@ -134,6 +134,7 @@ const styles = {
     borderRadius: "9999px",
     fontSize: "14px",
     fontWeight: "600",
+    cursor: "pointer",
   },
   button: {
     display: "inline-flex",

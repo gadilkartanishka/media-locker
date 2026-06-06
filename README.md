@@ -193,6 +193,16 @@ Before upload, images are processed in the browser:
 - **Compression** — images are compressed to max 1MB and 1920px using browser-image-compression
 - **Preview** — user sees a preview of the image with compression info before uploading
 
+## Frontend Screens
+
+The lightweight React application contains the following screens:
+
+- **Login / Register** — Handles user onboarding and login, persisting JWT tokens and local session states.
+- **Media Feed** — Displays all available uploads, prices in coins, and visual indicators of status (Locked / Unlocked / User's own uploads).
+- **Upload Media** — Prompts the user to set a title and coin unlock price, validates the image, and compresses it client-side before sending.
+- **Media Details** — A detail view where users can unlock the content with one click or view the full-quality original image if already unlocked or owned.
+- **Wallet Details** — Displays the user's current coin balance and a chronological log of all transactions (debiting unlocks and crediting events).
+
 ## API Documentation
 
 All protected endpoints require:

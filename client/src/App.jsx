@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Feed from "./pages/Feed";
 import Upload from "./pages/Upload";
 import MediaDetail from "./pages/MediaDetail";
+import Wallet from "./pages/Wallet";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -27,6 +28,14 @@ function App() {
           element={
             <PrivateRoute>
               <Upload />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/wallet"
+          element={
+            <PrivateRoute>
+              <Wallet />
             </PrivateRoute>
           }
         />
