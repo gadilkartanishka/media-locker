@@ -1,14 +1,55 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import imageCompression from "browser-image-compression";
 import api from "../api/axios";
 
 function Upload() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState(null);
   const navigate = useNavigate();
+
+  const handleFileChange = async (e) => {
+    const selected = e.target.files[0];
+    if (!selected) return;
+
+    if (!selected.type.startsWith("image/")) {
+      setError("Only image files are allowed");
+      return;
+    }
+
+    if (selected.size > 10 * 1024 * 1024) {
+      setError("File size must be under 10MB");
+      return;
+    }
+
+    setError("");
+    const originalSize = (selected.size / 1024 / 1024).toFixed(2);
+
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    };
+
+    try {
+      const compressed = await imageCompression(selected, options);
+      const compressedSize = (compressed.size / 1024 / 1024).toFixed(2);
+
+      setCompressionInfo({ originalSize, compressedSize });
+      setFile(compressed);
+
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result);
+      reader.readAsDataURL(compressed);
+    } catch (err) {
+      setError("Image processing failed");
+    }
+  };
 
   const handleUpload = async () => {
     if (!title || !price || !file) {
@@ -61,8 +102,20 @@ function Upload() {
           style={styles.input}
           type="file"
           accept="image/*"
-          onChange={(e) => setFile(e.target.files[0])}
+          onChange={handleFileChange}
         />
+
+        {preview && (
+          <div>
+            <img src={preview} alt="Preview" style={styles.preview} />
+            {compressionInfo && (
+              <p style={styles.compressionText}>
+                Compressed: {compressionInfo.originalSize}MB →{" "}
+                {compressionInfo.compressedSize}MB
+              </p>
+            )}
+          </div>
+        )}
 
         {error && <p style={styles.error}>{error}</p>}
 
@@ -79,7 +132,7 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    height: "100vh",
+    minHeight: "100vh",
   },
   box: {
     background: "#fff",
@@ -109,6 +162,7 @@ const styles = {
     border: "none",
     borderRadius: "6px",
     fontSize: "14px",
+    cursor: "pointer",
   },
   back: {
     background: "none",
@@ -117,6 +171,8 @@ const styles = {
     fontSize: "14px",
   },
   error: { color: "red", fontSize: "13px" },
+  preview: { width: "100%", borderRadius: "6px", marginTop: "0.5rem" },
+  compressionText: { fontSize: "12px", color: "#888", marginTop: "0.5rem" },
 };
 
 export default Upload;

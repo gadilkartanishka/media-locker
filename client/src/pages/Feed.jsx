@@ -52,9 +52,15 @@ function Feed() {
             onClick={() => navigate(`/media/${item.id}`)}
           >
             <div style={styles.imageBox}>
-              <div style={styles.locked}>
-                {item.is_unlocked || item.is_owner ? "🔓" : "🔒"}
-              </div>
+              <img
+                src={
+                  item.is_owner || item.is_unlocked
+                    ? item.original_url
+                    : item.blurred_url
+                }
+                alt={item.title}
+                style={styles.image}
+              />
             </div>
             <div style={styles.info}>
               <p style={styles.title}>{item.title}</p>
@@ -120,6 +126,8 @@ const styles = {
   title: { fontWeight: "600", marginBottom: "0.25rem" },
   price: { fontSize: "13px", color: "#555" },
   status: { fontSize: "12px", color: "#888", marginTop: "0.25rem" },
+  imageBox: { height: "150px", overflow: "hidden" },
+  image: { width: "100%", height: "100%", objectFit: "cover" },
 };
 
 export default Feed;
