@@ -4,12 +4,18 @@ const authRoutes = require("./routes/auth");
 const { server } = require("./db/s3");
 const mediaRoutes = require("./routes/media");
 const walletRoutes = require("./routes/wallet");
-
+const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 
 app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use("/auth", authRoutes);
 app.use("/media", mediaRoutes);
 app.use("/wallet", walletRoutes);

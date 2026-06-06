@@ -1,9 +1,9 @@
 const { PutObjectCommand } = require("@aws-sdk/client-s3");
-const { s3Client, BUCKET_NAME } = require("../db/s3");
+const { s3Client, BUCKET_NAME, generatePresignedUrl } = require("../db/s3");
 const pool = require("../db");
 const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
-const { generatePresignedUrl } = require("../db/s3");
+
 const uploadMedia = async (req, res) => {
   try {
     const { title, unlock_price } = req.body;
@@ -50,6 +50,7 @@ const uploadMedia = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 const getMediaFeed = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -60,6 +61,7 @@ const getMediaFeed = async (req, res) => {
         m.title,
         m.unlock_price,
         m.blurred_key,
+        m.original_key,
         m.created_at,
         m.uploader_id,
         CASE WHEN u.id IS NOT NULL THEN true ELSE false END as is_unlocked,
@@ -70,12 +72,24 @@ const getMediaFeed = async (req, res) => {
       [userId],
     );
 
-    res.json({ media: result.rows });
+    const mediaWithUrls = await Promise.all(
+      result.rows.map(async (item) => {
+        const blurred_url = await generatePresignedUrl(item.blurred_key);
+        let original_url = null;
+        if (item.is_owner || item.is_unlocked) {
+          original_url = await generatePresignedUrl(item.original_key);
+        }
+        return { ...item, blurred_url, original_url };
+      }),
+    );
+
+    res.json({ media: mediaWithUrls });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 const unlockMedia = async (req, res) => {
   const client = await pool.connect();
 
@@ -85,7 +99,6 @@ const unlockMedia = async (req, res) => {
 
     await client.query("BEGIN");
 
-    // Get media details
     const mediaResult = await client.query(
       "SELECT * FROM media WHERE id = $1",
       [mediaId],
@@ -98,7 +111,6 @@ const unlockMedia = async (req, res) => {
 
     const media = mediaResult.rows[0];
 
-    // Check if user is the owner
     if (media.uploader_id === userId) {
       await client.query("ROLLBACK");
       return res
@@ -106,7 +118,6 @@ const unlockMedia = async (req, res) => {
         .json({ error: "You cannot unlock your own media" });
     }
 
-    // Check for duplicate purchase
     const existingUnlock = await client.query(
       "SELECT * FROM unlocks WHERE user_id = $1 AND media_id = $2",
       [userId, mediaId],
@@ -117,7 +128,6 @@ const unlockMedia = async (req, res) => {
       return res.status(400).json({ error: "Already unlocked" });
     }
 
-    // Check user balance
     const userResult = await client.query(
       "SELECT coins FROM users WHERE id = $1",
       [userId],
@@ -128,20 +138,17 @@ const unlockMedia = async (req, res) => {
       return res.status(400).json({ error: "Insufficient coins" });
     }
 
-    // Deduct coins
     await client.query("UPDATE users SET coins = coins - $1 WHERE id = $2", [
       media.unlock_price,
       userId,
     ]);
 
-    // Record transaction
     await client.query(
       `INSERT INTO transactions (user_id, amount, type, description)
        VALUES ($1, $2, 'debit', $3)`,
       [userId, media.unlock_price, `Unlocked media: ${media.title}`],
     );
 
-    // Create unlock record
     await client.query(
       "INSERT INTO unlocks (user_id, media_id) VALUES ($1, $2)",
       [userId, mediaId],
@@ -158,12 +165,12 @@ const unlockMedia = async (req, res) => {
     client.release();
   }
 };
+
 const getMediaById = async (req, res) => {
   try {
     const userId = req.user.userId;
     const mediaId = req.params.id;
 
-    // Get media details
     const mediaResult = await pool.query("SELECT * FROM media WHERE id = $1", [
       mediaId,
     ]);
@@ -173,8 +180,6 @@ const getMediaById = async (req, res) => {
     }
 
     const media = mediaResult.rows[0];
-
-    // Check if user has access (owner or unlocked)
     const isOwner = media.uploader_id === userId;
 
     const unlockResult = await pool.query(
@@ -183,11 +188,8 @@ const getMediaById = async (req, res) => {
     );
 
     const isUnlocked = unlockResult.rows.length > 0;
-
-    // Generate blurred URL always
     const blurredUrl = await generatePresignedUrl(media.blurred_key);
 
-    // Generate original URL only if owner or unlocked
     let originalUrl = null;
     if (isOwner || isUnlocked) {
       originalUrl = await generatePresignedUrl(media.original_key);
@@ -207,4 +209,5 @@ const getMediaById = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+
 module.exports = { uploadMedia, getMediaFeed, unlockMedia, getMediaById };
