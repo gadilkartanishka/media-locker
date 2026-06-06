@@ -77,9 +77,13 @@ function Upload() {
     <div style={styles.container}>
       <div style={styles.box}>
         <div style={styles.header}>
-          <h2>Upload Media</h2>
-          <button onClick={() => navigate("/feed")} style={styles.back}>
-            ← Back
+          <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#0f172a" }}>Upload Media</h2>
+          <button onClick={() => navigate("/feed")} style={styles.back} className="back-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back
           </button>
         </div>
 
@@ -133,46 +137,65 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     minHeight: "100vh",
+    padding: "2rem 1rem",
   },
   box: {
     background: "#fff",
-    padding: "2rem",
-    borderRadius: "8px",
-    width: "400px",
+    padding: "2.5rem",
+    borderRadius: "12px",
+    width: "420px",
     display: "flex",
     flexDirection: "column",
-    gap: "1rem",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    gap: "1.25rem",
+    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
+    border: "1px solid #e2e8f0",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: "0.5rem",
   },
   input: {
-    padding: "0.75rem",
-    border: "1px solid #ddd",
-    borderRadius: "6px",
+    padding: "0.875rem 1rem",
+    border: "1px solid #e2e8f0",
+    borderRadius: "8px",
     fontSize: "14px",
+    background: "#f8fafc",
+    color: "#0f172a",
   },
   button: {
-    padding: "0.75rem",
-    background: "#111",
+    padding: "0.875rem 1rem",
+    background: "#e11d48",
     color: "#fff",
     border: "none",
-    borderRadius: "6px",
+    borderRadius: "8px",
     fontSize: "14px",
+    fontWeight: "500",
     cursor: "pointer",
   },
   back: {
+    display: "inline-flex",
+    alignItems: "center",
     background: "none",
     border: "none",
     cursor: "pointer",
     fontSize: "14px",
+    fontWeight: "500",
+    color: "#64748b",
   },
-  error: { color: "red", fontSize: "13px" },
-  preview: { width: "100%", borderRadius: "6px", marginTop: "0.5rem" },
-  compressionText: { fontSize: "12px", color: "#888", marginTop: "0.5rem" },
+  error: { color: "#ef4444", fontSize: "13px", textAlign: "center" },
+  preview: { width: "100%", borderRadius: "8px", marginTop: "0.5rem", border: "1px solid #e2e8f0" },
+  compressionText: {
+    fontSize: "12px",
+    color: "#e11d48",
+    fontWeight: "500",
+    marginTop: "0.5rem",
+    background: "#ffe4e6",
+    padding: "0.5rem 0.75rem",
+    borderRadius: "6px",
+    textAlign: "center",
+  },
 };
 
 export default Upload;
